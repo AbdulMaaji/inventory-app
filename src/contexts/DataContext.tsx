@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { Item, Category, Location, Transaction, Alert, TransactionType } from '../lib/types';
-import { dbPromise, EncryptedRecord } from '../lib/db';
+import { dbPromise, type EncryptedRecord } from '../lib/db';
 import { encryptData, decryptData } from '../lib/crypto';
 import { useAuth } from './AuthContext';
 import { v4 as uuidv4 } from 'uuid';
