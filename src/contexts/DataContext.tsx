@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { Item, Category, Location, Transaction, Alert, TransactionType } from '../lib/types';
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
+import type { Item, Category, Location, Transaction, Alert, Shift, Sale, Activity, SaleItem } from '../lib/types';
 import { dbPromise, type EncryptedRecord } from '../lib/db';
 import { encryptData, decryptData } from '../lib/crypto';
 import { useAuth } from './AuthContext';
@@ -11,49 +11,63 @@ interface DataContextType {
     locations: Location[];
     transactions: Transaction[];
     alerts: Alert[];
+    shifts: Shift[];
+    sales: Sale[];
+    activities: Activity[];
     isLoading: boolean;
     refreshData: () => Promise<void>;
 
-    addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+    addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => Promise<void>;
     updateItem: (id: string, updates: Partial<Item>) => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
 
-    addCategory: (category: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+    addCategory: (category: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => Promise<void>;
     updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
     deleteCategory: (id: string) => Promise<void>;
 
-    addLocation: (location: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+    addLocation: (location: Omit<Location, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => Promise<void>;
     updateLocation: (id: string, updates: Partial<Location>) => Promise<void>;
     deleteLocation: (id: string) => Promise<void>;
 
-    addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
+    addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'shopId'>) => Promise<void>;
+
+    // POS & Shifts
+    startShift: (openingCash: number) => Promise<void>;
+    endShift: (closingCash: number, notes?: string) => Promise<void>;
+    activeShift: Shift | null;
+    createSale: (data: { items: { itemId: string; quantity: number }[]; paymentMethod: Sale['paymentMethod'] }) => Promise<void>;
+    receiveStock: (data: { itemId: string; quantity: number; costPrice: number; supplier?: string; invoice?: string }) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const { dek, isAuthenticated, user } = useAuth();
+    const { dek, isAuthenticated, user, shop, logActivity } = useAuth();
     const [items, setItems] = useState<Item[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [shifts, setShifts] = useState<Shift[]>([]);
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const activeShift = shifts.find(s => s.status === 'open' && s.userId === user?.id) || null;
+
     const loadData = useCallback(async () => {
-        if (!isAuthenticated || !dek) return;
+        if (!isAuthenticated || !dek || !user || !shop) return;
         setIsLoading(true);
         try {
             const db = await dbPromise;
 
-            const decryptAll = async <T,>(storeName: any) => {
-                const records = await db.getAll(storeName);
+            const decryptAll = async <T,>(storeName: 'items' | 'categories' | 'locations' | 'transactions' | 'alerts' | 'shifts' | 'sales' | 'activities') => {
+                const records = await db.getAllFromIndex(storeName, 'by-shop', shop.id);
                 const decrypted = await Promise.all(
                     records.map(async (r: EncryptedRecord) => {
                         try {
                             return await decryptData(r.encryptedData, dek);
                         } catch (e) {
-                            console.error(`Failed to decrypt record in ${storeName}`, r.id);
                             return null;
                         }
                     })
@@ -61,12 +75,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 return decrypted.filter((x): x is T => x !== null);
             };
 
-            const [loadedItems, loadedCats, loadedLocs, loadedTrans, loadedAlerts] = await Promise.all([
+            const [
+                loadedItems, loadedCats, loadedLocs, loadedTrans,
+                loadedAlerts, loadedShifts, loadedSales, loadedActs
+            ] = await Promise.all([
                 decryptAll<Item>('items'),
                 decryptAll<Category>('categories'),
                 decryptAll<Location>('locations'),
                 decryptAll<Transaction>('transactions'),
                 decryptAll<Alert>('alerts'),
+                decryptAll<Shift>('shifts'),
+                decryptAll<Sale>('sales'),
+                decryptAll<Activity>('activities')
             ]);
 
             setItems(loadedItems);
@@ -74,13 +94,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setLocations(loadedLocs);
             setTransactions(loadedTrans.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             setAlerts(loadedAlerts);
+            setShifts(loadedShifts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            setSales(loadedSales.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            setActivities(loadedActs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
         } catch (e) {
             console.error("Failed to load data", e);
         } finally {
             setIsLoading(false);
         }
-    }, [dek, isAuthenticated]);
+    }, [dek, isAuthenticated, user, shop]);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -89,43 +112,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setLocations([]);
             setTransactions([]);
             setAlerts([]);
+            setShifts([]);
+            setSales([]);
+            setActivities([]);
         } else {
             loadData();
         }
     }, [isAuthenticated, loadData]);
 
-    // --- Helpers to save ---
-
     const saveRecord = async (storeName: any, data: any) => {
-        if (!dek) throw new Error("No encryption key");
-        const encrypted = await encryptData(data, dek);
+        if (!dek || !shop) throw new Error("No encryption key or shop");
+        const encrypted = await encryptData(JSON.stringify(data), dek);
         const db = await dbPromise;
-        await db.put(storeName, { id: data.id, encryptedData: encrypted });
+        await db.put(storeName, { id: data.id, shopId: shop.id, encryptedData: encrypted });
     };
 
-    const deleteRecord = async (storeName: any, id: string) => {
-        const db = await dbPromise;
-        await db.delete(storeName, id);
-    };
-
-    // --- Actions ---
-
-    const addItem = async (itemData: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const addItem = async (itemData: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => {
+        if (!shop) return;
         const newItem: Item = {
             ...itemData,
             id: uuidv4(),
+            shopId: shop.id,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
         setItems(prev => [...prev, newItem]);
         await saveRecord('items', newItem);
-
-        // Log creation transaction
         await addTransaction({
             itemId: newItem.id,
             type: 'add',
             quantity: newItem.quantity,
-            toLocationId: newItem.locationId,
             reason: 'Initial creation',
             notes: 'Created item'
         });
@@ -143,17 +159,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteItem = async (id: string) => {
-        // Soft delete? Requirements say "soft deletes (deleted_at)"
-        // So updateItem(id, { deletedAt: new Date().toISOString() })
-        // But deleteRecord usually removes from DB.
-        // I will implement soft delete as an update.
         await updateItem(id, { deletedAt: new Date().toISOString() });
     };
 
-    const addCategory = async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const addCategory = async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => {
+        if (!shop) return;
         const newCat: Category = {
             ...data,
             id: uuidv4(),
+            shopId: shop.id,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -176,10 +190,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateCategory(id, { deletedAt: new Date().toISOString() });
     };
 
-    const addLocation = async (data: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const addLocation = async (data: Omit<Location, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => {
+        if (!shop) return;
         const newLoc: Location = {
             ...data,
             id: uuidv4(),
+            shopId: shop.id,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -202,11 +218,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateLocation(id, { deletedAt: new Date().toISOString() });
     };
 
-    const addTransaction = async (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
-        if (!user) return;
+    const addTransaction = async (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'shopId'>) => {
+        if (!user || !shop) return;
         const newTrans: Transaction = {
             ...data,
             userId: user.id,
+            userSnapshot: {
+                username: user.username
+            },
+            shopId: shop.id,
             id: uuidv4(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -215,13 +235,148 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await saveRecord('transactions', newTrans);
     };
 
+    const startShift = async (openingCash: number) => {
+        if (!user || !shop) return;
+        const newShift: Shift = {
+            id: uuidv4(),
+            shopId: shop.id,
+            userId: user.id,
+            startTime: new Date().toISOString(),
+            openingCash,
+            status: 'open',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        setShifts(prev => [newShift, ...prev]);
+        await saveRecord('shifts', newShift);
+        await logActivity('start_shift', `Started shift with ₦${openingCash}`);
+    };
+
+    const endShift = async (closingCash: number, notes?: string) => {
+        if (!activeShift || !user) return;
+
+        // Calculate expected variance (simplified: Sales + Opening)
+        const shiftSales = sales.filter(s => s.shiftId === activeShift.id && s.paymentMethod === 'cash');
+        const expectedCash = activeShift.openingCash + shiftSales.reduce((sum, s) => sum + s.totalAmount, 0);
+        const variance = closingCash - expectedCash;
+
+        const updatedShift: Shift = {
+            ...activeShift,
+            endTime: new Date().toISOString(),
+            closingCash,
+            variance,
+            notes,
+            status: 'closed',
+            updatedAt: new Date().toISOString()
+        };
+
+        setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
+        await saveRecord('shifts', updatedShift);
+        await logActivity('end_shift', `Ended shift. Variance: ₦${variance}`);
+
+        if (Math.abs(variance) > 1000) {
+            // Create high priority alert
+            const alert: Alert = {
+                id: uuidv4(),
+                shopId: shop!.id,
+                itemId: '', // Not item specific
+                type: 'variance_high',
+                message: `High variance (₦${variance}) in ${user.username}'s shift.`,
+                isRead: false,
+                level: 'high',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            setAlerts(prev => [alert, ...prev]);
+            await saveRecord('alerts', alert);
+        }
+    };
+
+    const createSale = async (data: { items: { itemId: string; quantity: number }[]; paymentMethod: Sale['paymentMethod'] }) => {
+        if (!user || !shop || !activeShift) throw new Error("Need active shift to make sale");
+
+        let total = 0;
+        const saleItems: SaleItem[] = [];
+        const now = new Date().toISOString();
+        const saleId = uuidv4();
+
+        for (const sItem of data.items) {
+            const item = items.find(i => i.id === sItem.itemId);
+            if (!item) continue;
+
+            const subtotal = item.sellingPrice * sItem.quantity;
+            total += subtotal;
+
+            saleItems.push({
+                id: uuidv4(),
+                saleId,
+                itemId: sItem.itemId,
+                quantity: sItem.quantity,
+                priceAtSale: item.sellingPrice,
+                costAtSale: item.costPrice
+            });
+
+            // Update local stock
+            await updateItem(item.id, { quantity: item.quantity - sItem.quantity });
+
+            // Log stock movement
+            await addTransaction({
+                itemId: item.id,
+                type: 'sale',
+                quantity: sItem.quantity,
+                reason: `Sale ${saleId}`,
+                notes: `Sold ${sItem.quantity} to customer`
+            });
+        }
+
+        const newSale: Sale = {
+            id: saleId,
+            shopId: shop.id,
+            userId: user.id,
+            shiftId: activeShift.id,
+            totalAmount: total,
+            paymentMethod: data.paymentMethod,
+            timestamp: now,
+            items: saleItems,
+            createdAt: now,
+            updatedAt: now
+        };
+
+        setSales(prev => [newSale, ...prev]);
+        await saveRecord('sales', newSale);
+        await logActivity('sale_created', `Completed sale ₦${total} via ${data.paymentMethod}`);
+    };
+
+    const receiveStock = async (data: { itemId: string; quantity: number; costPrice: number; supplier?: string; invoice?: string }) => {
+        if (!user || !shop) return;
+
+        const item = items.find(i => i.id === data.itemId);
+        if (!item) return;
+
+        await updateItem(item.id, {
+            quantity: item.quantity + data.quantity,
+            costPrice: data.costPrice
+        });
+
+        await addTransaction({
+            itemId: item.id,
+            type: 'stock_in',
+            quantity: data.quantity,
+            reason: `Restock - Inv: ${data.invoice || 'N/A'}`,
+            notes: `Received from ${data.supplier || 'Unknown'}`
+        });
+
+        await logActivity('stock_received', `Received ${data.quantity} units of ${item.name}`);
+    };
+
     return (
         <DataContext.Provider value={{
-            items, categories, locations, transactions, alerts, isLoading, refreshData: loadData,
+            items, categories, locations, transactions, alerts, shifts, sales, activities, isLoading, refreshData: loadData,
             addItem, updateItem, deleteItem,
             addCategory, updateCategory, deleteCategory,
             addLocation, updateLocation, deleteLocation,
-            addTransaction
+            addTransaction,
+            startShift, endShift, activeShift, createSale, receiveStock
         }}>
             {children}
         </DataContext.Provider>

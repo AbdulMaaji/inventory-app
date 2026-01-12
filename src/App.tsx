@@ -9,13 +9,24 @@ import CategoriesPage from './pages/CategoriesPage';
 import LocationsPage from './pages/LocationsPage';
 import ScanPage from './pages/ScanPage';
 import SettingsPage from './pages/SettingsPage';
+import POSPage from './pages/POSPage';
+import ShiftPage from './pages/ShiftPage';
+import EmployeesPage from './pages/EmployeesPage';
+import ActivitiesPage from './pages/ActivitiesPage';
 
-function PrivateRoute({ children }: { children: JSX.Element }) {
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (isLoading) return (
+    <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="relative flex flex-col items-center">
+        <div className="h-20 w-20 border-8 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="mt-4 font-black uppercase text-xs tracking-widest text-primary animate-pulse">Initializing Shop</p>
+      </div>
+    </div>
+  );
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
 function App() {
@@ -36,6 +47,10 @@ function App() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="scan" element={<ScanPage />} />
+          <Route path="pos" element={<POSPage />} />
+          <Route path="shift" element={<ShiftPage />} />
+          <Route path="employees" element={<EmployeesPage />} />
+          <Route path="activities" element={<ActivitiesPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

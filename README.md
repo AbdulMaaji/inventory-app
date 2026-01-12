@@ -1,78 +1,73 @@
-# Offline Secure Inventory App
+# Real-Time Multi-Tenant Inventory Platform
 
-A robust, offline-first inventory management system built with React, TypeScript, and IndexedDB. This application is designed to work entirely in the browser without requiring a backend server for data storage, ensuring complete data privacy and availability without an internet connection.
+A modern, real-time, offline-first inventory management system designed for multi-shop scalability. This application allows business owners to manage multiple locations and employees while ensuring data is always available—even without an internet connection.
 
-## Features
+## 🚀 Key Features
 
--   **Offline-First Architecture**: All data is stored locally in the browser using IndexedDB.
--   **Secure Data Storage**: Sensitive data is encrypted at rest within the browser.
--   **User Authentication**: Secure local authentication system with salted password hashing.
--   **Inventory Management**:
-    -   Track Items, Categories, and Locations.
-    -   Record Transactions (In/Out/Move/Audit).
-    -   Set and monitor Low Stock Alerts.
--   **Barcode Scanning**: Integrated camera support for scanning barcodes/QR codes (using `html5-qrcode`).
--   **Data Export**: Export inventory data to CSV (using `papaparse`).
--   **Dashboard & Analytics**: Visual insights into inventory status (using `recharts`).
--   **Modern UI**: Built with Tailwind CSS 4 and Lucide Icons for a clean, responsive interface.
+### 🏢 Multi-Shop & Multi-Tenancy
+-   **Register Multiple Shops**: A single deployment supports multiple separate organizations (Tenant Isolation).
+-   **Scalable Architecture**: Designed to handle businesses ranging from single kiosks to multi-location retail chains.
 
-## Tech Stack
+### 👥 Role-Based Access Control (RBAC)
+-   **Shop Owner (Admin)**: 
+    -   Full control over shop settings, inventory, and finances.
+    -   Invite and manage employees.
+    -   View aggregated analytics and audit logs.
+-   **Employees**:
+    -   Restricted access tailored to daily tasks (POS, Stocking).
+    -   Real-time collaboration.
 
--   **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
--   **Language**: [TypeScript](https://www.typescriptlang.org/)
--   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
--   **Storage**: [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) (via [`idb`](https://github.com/jakearchibald/idb))
--   **Routing**: [React Router v7](https://reactrouter.com/)
--   **Forms & Validation**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
--   **Utilities**: `date-fns`, `uuid`, `clsx`, `tailwind-merge`
+### ⚡ Real-Time Sync & Offline-First
+-   **Instant Synchronization**: Employees work in real-time. Sales or stock changes made by one employee instantly reflect on others' devices.
+-   **Works Offline**: The app works flawlessly without internet. Data is stored locally and syncs automatically when the connection is restored.
+-   **Conflict Resolution**: robust handling of data conflicts when multiple users edit the same item offline.
+
+### 📊 Monitoring & Analytics
+-   **Live Dashboard**: Owners can monitor employee activity and current sales in real-time.
+-   **Performance Metrics**: Track individual employee productivity and shop sales performance.
+-   **Audit Trails**: Detailed logs of every action (who accepted stock, who made a sale, when and where).
+
+## 🛠 Tech Stack
+
+-   **Frontend**: React 19, TypeScript, Vite
+-   **Styling**: Tailwind CSS 4, Lucide Icons
+-   **Local Storage**: IndexedDB (for offline capability)
+-   **State Management**: React Context + Real-time subscriptions
+-   **Sync Engine / Backend**: [Proposed: Supabase or Firebase] for Auth, Real-time subscriptions, and Data Persistence.
+
+## Project Structure
+
+-   `src/lib/db.ts`: Local database schema (IndexedDB).
+-   `src/services/sync`: (Planned) Synchronization logic between Local DB and Cloud.
+-   `src/components`: Reusable UI components.
+-   `src/pages`: Application views (Dashboard, Inventory, Shop Settings).
+-   `src/contexts`: Auth and Sync providers.
 
 ## Getting Started
 
 ### Prerequisites
-
--   Node.js (v18 or higher recommended)
--   npm or yarn
+-   Node.js (v18+)
+-   Cloud Backend Account (e.g., Supabase Project URL/Keys)
 
 ### Installation
 
-1.  Clone the repository (or extract the project files).
+1.  Clone the repository.
 2.  Install dependencies:
-
     ```bash
     npm install
     ```
-
-3.  Start the development server:
-
+3.  Configure Environment Variables:
+    Create a `.env` file and add your backend credentials:
+    ```
+    VITE_SUPABASE_URL=your_url
+    VITE_SUPABASE_ANON_KEY=your_key
+    ```
+4.  Start local server:
     ```bash
     npm run dev
     ```
 
-4.  Open your browser and navigate to the URL shown in the terminal (usually `http://localhost:5173`).
-
-### Building for Production
-
-To create a production-ready build:
-
-```bash
-npm run build
-```
-
-To preview the production build locally:
-
-```bash
-npm run preview
-```
-
-## Project Structure
-
--   `src/lib/db.ts`: IndexedDB initialization and schema handling.
--   `src/components`: Reusable UI components.
--   `src/pages`: Application views/pages.
--   `src/contexts`: React contexts for state management (e.g., Auth, Theme).
--   `src/types`: TypeScript type definitions.
-
-## Important Notes
-
--   **Data Persistence**: Since this app runs entirely client-side, clearing your browser's site data/cache will **erase all application data**.
--   **Security**: While the application implements encryption, ensuring the physical security of the device is important as the decryption keys are managed within the browser session context during use.
+## Security
+-   **End-to-End Encryption**: Sensitive business data is encrypted.
+-   **Secure Auth**: Industry-standard authentication for Owners and Employees.
+-   **Data Isolation**: Strict separation of data between different shops.

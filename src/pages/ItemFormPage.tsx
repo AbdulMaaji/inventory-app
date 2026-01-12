@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
@@ -7,7 +7,7 @@ import { Input } from '../components/ui/Input';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import type { Item } from '../lib/types';
 
-type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'shopId'>;
 
 export default function ItemFormPage() {
     const { id } = useParams();
