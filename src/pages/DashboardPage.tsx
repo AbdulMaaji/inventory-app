@@ -2,8 +2,8 @@ import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Package, AlertTriangle,
-    DollarSign, Users, Activity as ActivityIcon, Clock,
-    ShoppingCart, ChevronRight, TrendingUp, Power
+    Users, Activity as ActivityIcon, Clock,
+    ChevronRight, TrendingUp, Power
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
@@ -30,9 +30,9 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <DashboardCard
-                        title="Today's Sales"
-                        value={currency(sales.reduce((sum, s) => sum + s.totalAmount, 0))}
-                        icon={<DollarSign className="text-green-600" />}
+                        title="Today's Inventory Val"
+                        value={currency(items.reduce((sum, i) => sum + (i.sellingPrice * i.quantity), 0))}
+                        icon={<TrendingUp className="text-green-600" />}
                         trend="+12% from yesterday"
                     />
                     <DashboardCard
@@ -53,7 +53,7 @@ export default function DashboardPage() {
                         value={alerts.length.toString()}
                         icon={<AlertTriangle className="text-red-600" />}
                         trend="Unresolved issues"
-                        critical={alerts.some(a => a.severity === 'high')}
+                        critical={alerts.some(a => a.level === 'high')}
                     />
                 </div>
 
@@ -67,7 +67,7 @@ export default function DashboardPage() {
                             {activities.slice(0, 5).map(act => (
                                 <div key={act.id} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
                                     <div className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
-                                        {act.action.includes('sale') ? <ShoppingCart className="h-4 w-4 text-green-500" /> : <ActivityIcon className="h-4 w-4 text-primary" />}
+                                        <ActivityIcon className="h-4 w-4 text-primary" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold truncate text-gray-800 dark:text-gray-200">{act.details}</p>
@@ -129,12 +129,6 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                     <h2 className="text-xl font-black px-2">Quick Actions</h2>
                     <div className="grid grid-cols-2 gap-4">
-                        <ActionButton
-                            onClick={() => navigate('/pos')}
-                            label="Make Sale"
-                            icon={<ShoppingCart />}
-                            disabled={!activeShift}
-                        />
                         <ActionButton
                             onClick={() => navigate('/items')}
                             label="Inventory"

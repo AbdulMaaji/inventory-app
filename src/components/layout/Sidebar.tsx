@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard, Package,
-    Settings, X, ShoppingCart, Power, Users
+    Settings, X, Power, Users
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/Button';
@@ -14,7 +14,6 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
-    { label: 'Point of Sale', icon: ShoppingCart, href: '/pos', roles: ['owner', 'manager', 'cashier'] },
     { label: 'Shift', icon: Power, href: '/shift', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Inventory', icon: Package, href: '/items', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Employees', icon: Users, href: '/employees', roles: ['owner'] },

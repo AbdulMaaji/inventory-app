@@ -124,3 +124,24 @@ export type Alert = BaseEntity & {
     isRead: boolean;
     level: 'low' | 'medium' | 'high';
 };
+
+export type ShiftRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type ShiftRequest = BaseEntity & {
+    userId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    reason: string;
+    status: ShiftRequestStatus;
+};
+
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type LeaveRequest = BaseEntity & {
+    userId: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    status: LeaveRequestStatus;
+};

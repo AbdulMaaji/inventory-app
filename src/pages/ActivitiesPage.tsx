@@ -1,6 +1,6 @@
 import { useData } from '../contexts/DataContext';
 import {
-    ShoppingCart, Package, Power, Users, Activity as ActivityIcon,
+    Package, Power, Users, Activity as ActivityIcon,
     Smartphone, Monitor, Laptop, Search, Clock
 } from 'lucide-react';
 import { useState } from 'react';
@@ -74,7 +74,7 @@ export default function ActivitiesPage() {
 
 function getActionIcon(action: string) {
     switch (action) {
-        case 'sale_created': return <ShoppingCart className="h-6 w-6 text-green-600" />;
+        case 'sale_created': return <ActivityIcon className="h-6 w-6 text-green-600" />;
         case 'stock_received': return <Package className="h-6 w-6 text-blue-600" />;
         case 'start_shift': return <Power className="h-6 w-6 text-purple-600" />;
         case 'end_shift': return <Power className="h-6 w-6 text-red-600" />;

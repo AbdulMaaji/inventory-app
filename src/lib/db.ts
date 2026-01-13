@@ -82,10 +82,20 @@ interface InventoryDB extends DBSchema {
         value: EncryptedRecord;
         indexes: { 'by-shop': string };
     };
+    shift_requests: {
+        key: string;
+        value: EncryptedRecord;
+        indexes: { 'by-shop': string };
+    };
+    leave_requests: {
+        key: string;
+        value: EncryptedRecord;
+        indexes: { 'by-shop': string };
+    };
 }
 
 const DB_NAME = 'inventory_app';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export async function initDB() {
     return openDB<InventoryDB>(DB_NAME, DB_VERSION, {
@@ -117,7 +127,8 @@ export async function initDB() {
             // Encrypted Stores
             const stores = [
                 'items', 'categories', 'transactions',
-                'alerts', 'shifts', 'sales', 'activities'
+                'alerts', 'shifts', 'sales', 'activities',
+                'shift_requests', 'leave_requests'
             ] as const;
 
             for (const storeName of stores) {

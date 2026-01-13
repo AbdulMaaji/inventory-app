@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import type { Item, Category, Transaction, Alert, Shift, Sale, Activity, SaleItem } from '../lib/types';
+import type { Item, Category, Transaction, Alert, Shift, Sale, Activity, ShiftRequest, LeaveRequest } from '../lib/types';
 import { dbPromise, type EncryptedRecord } from '../lib/db';
 import { encryptData, decryptData } from '../lib/crypto';
 import { useAuth } from './AuthContext';
@@ -13,6 +13,8 @@ interface DataContextType {
     shifts: Shift[];
     sales: Sale[];
     activities: Activity[];
+    shiftRequests: ShiftRequest[];
+    leaveRequests: LeaveRequest[];
     isLoading: boolean;
     refreshData: () => Promise<void>;
 
@@ -24,15 +26,16 @@ interface DataContextType {
     updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
     deleteCategory: (id: string) => Promise<void>;
 
-
-
     addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'shopId'>) => Promise<void>;
 
-    // POS & Shifts
+    // Shifts & Leave
     startShift: (openingCash: number) => Promise<void>;
     endShift: (closingCash: number, notes?: string) => Promise<void>;
     activeShift: Shift | null;
-    createSale: (data: { items: { itemId: string; quantity: number }[]; paymentMethod: Sale['paymentMethod'] }) => Promise<void>;
+    requestShift: (data: Omit<ShiftRequest, 'id' | 'createdAt' | 'updatedAt' | 'shopId' | 'userId' | 'status'>) => Promise<void>;
+    requestLeave: (data: Omit<LeaveRequest, 'id' | 'createdAt' | 'updatedAt' | 'shopId' | 'userId' | 'status'>) => Promise<void>;
+    updateShiftRequest: (id: string, status: ShiftRequest['status']) => Promise<void>;
+    updateLeaveRequest: (id: string, status: LeaveRequest['status']) => Promise<void>;
     receiveStock: (data: { itemId: string; quantity: number; costPrice: number; supplier?: string; invoice?: string }) => Promise<void>;
 }
 
@@ -47,6 +50,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [sales, setSales] = useState<Sale[]>([]);
     const [activities, setActivities] = useState<Activity[]>([]);
+    const [shiftRequests, setShiftRequests] = useState<ShiftRequest[]>([]);
+    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const activeShift = shifts.find(s => s.status === 'open' && s.userId === user?.id) || null;
@@ -57,7 +62,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             const db = await dbPromise;
 
-            const decryptAll = async <T,>(storeName: 'items' | 'categories' | 'transactions' | 'alerts' | 'shifts' | 'sales' | 'activities') => {
+            const decryptAll = async <T,>(storeName: 'items' | 'categories' | 'transactions' | 'alerts' | 'shifts' | 'sales' | 'activities' | 'shift_requests' | 'leave_requests') => {
                 const records = await db.getAllFromIndex(storeName, 'by-shop', shop.id);
                 const decrypted = await Promise.all(
                     records.map(async (r: EncryptedRecord) => {
@@ -73,7 +78,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
             const [
                 loadedItems, loadedCats, loadedTrans,
-                loadedAlerts, loadedShifts, loadedSales, loadedActs
+                loadedAlerts, loadedShifts, loadedSales, loadedActs,
+                loadedShiftReqs, loadedLeaveReqs
             ] = await Promise.all([
                 decryptAll<Item>('items'),
                 decryptAll<Category>('categories'),
@@ -81,7 +87,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 decryptAll<Alert>('alerts'),
                 decryptAll<Shift>('shifts'),
                 decryptAll<Sale>('sales'),
-                decryptAll<Activity>('activities')
+                decryptAll<Activity>('activities'),
+                decryptAll<ShiftRequest>('shift_requests'),
+                decryptAll<LeaveRequest>('leave_requests')
             ]);
 
             setItems(loadedItems);
@@ -91,6 +99,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setShifts(loadedShifts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             setSales(loadedSales.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             setActivities(loadedActs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            setShiftRequests(loadedShiftReqs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            setLeaveRequests(loadedLeaveReqs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
         } catch (e) {
             console.error("Failed to load data", e);
@@ -259,59 +269,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const createSale = async (data: { items: { itemId: string; quantity: number }[]; paymentMethod: Sale['paymentMethod'] }) => {
-        if (!user || !shop || !activeShift) throw new Error("Need active shift to make sale");
-
-        let total = 0;
-        const saleItems: SaleItem[] = [];
-        const now = new Date().toISOString();
-        const saleId = uuidv4();
-
-        for (const sItem of data.items) {
-            const item = items.find(i => i.id === sItem.itemId);
-            if (!item) continue;
-
-            const subtotal = item.sellingPrice * sItem.quantity;
-            total += subtotal;
-
-            saleItems.push({
-                id: uuidv4(),
-                saleId,
-                itemId: sItem.itemId,
-                quantity: sItem.quantity,
-                priceAtSale: item.sellingPrice,
-                costAtSale: item.costPrice
-            });
-
-            // Update local stock
-            await updateItem(item.id, { quantity: item.quantity - sItem.quantity });
-
-            // Log stock movement
-            await addTransaction({
-                itemId: item.id,
-                type: 'sale',
-                quantity: sItem.quantity,
-                reason: `Sale ${saleId}`,
-                notes: `Sold ${sItem.quantity} to customer`
-            });
-        }
-
-        const newSale: Sale = {
-            id: saleId,
+    const requestShift = async (data: Omit<ShiftRequest, 'id' | 'createdAt' | 'updatedAt' | 'shopId' | 'userId' | 'status'>) => {
+        if (!user || !shop) return;
+        const newReq: ShiftRequest = {
+            ...data,
+            id: uuidv4(),
             shopId: shop.id,
             userId: user.id,
-            shiftId: activeShift.id,
-            totalAmount: total,
-            paymentMethod: data.paymentMethod,
-            timestamp: now,
-            items: saleItems,
-            createdAt: now,
-            updatedAt: now
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
+        setShiftRequests(prev => [newReq, ...prev]);
+        await saveRecord('shift_requests', newReq);
+        await logActivity('user_created', `Requested shift for ${data.date}`);
+    };
 
-        setSales(prev => [newSale, ...prev]);
-        await saveRecord('sales', newSale);
-        await logActivity('sale_created', `Completed sale ₦${total} via ${data.paymentMethod}`);
+    const requestLeave = async (data: Omit<LeaveRequest, 'id' | 'createdAt' | 'updatedAt' | 'shopId' | 'userId' | 'status'>) => {
+        if (!user || !shop) return;
+        const newReq: LeaveRequest = {
+            ...data,
+            id: uuidv4(),
+            shopId: shop.id,
+            userId: user.id,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        setLeaveRequests(prev => [newReq, ...prev]);
+        await saveRecord('leave_requests', newReq);
+        await logActivity('user_created', `Requested leave from ${data.startDate} to ${data.endDate}`);
+    };
+
+    const updateShiftRequest = async (id: string, status: ShiftRequest['status']) => {
+        setShiftRequests(prev => prev.map(r => {
+            if (r.id === id) {
+                const updated = { ...r, status, updatedAt: new Date().toISOString() };
+                saveRecord('shift_requests', updated);
+                return updated;
+            }
+            return r;
+        }));
+    };
+
+    const updateLeaveRequest = async (id: string, status: LeaveRequest['status']) => {
+        setLeaveRequests(prev => prev.map(r => {
+            if (r.id === id) {
+                const updated = { ...r, status, updatedAt: new Date().toISOString() };
+                saveRecord('leave_requests', updated);
+                return updated;
+            }
+            return r;
+        }));
     };
 
     const receiveStock = async (data: { itemId: string; quantity: number; costPrice: number; supplier?: string; invoice?: string }) => {
@@ -338,11 +347,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     return (
         <DataContext.Provider value={{
-            items, categories, transactions, alerts, shifts, sales, activities, isLoading, refreshData: loadData,
+            items, categories, transactions, alerts, shifts, sales, activities, shiftRequests, leaveRequests, isLoading, refreshData: loadData,
             addItem, updateItem, deleteItem,
             addCategory, updateCategory, deleteCategory,
             addTransaction,
-            startShift, endShift, activeShift, createSale, receiveStock
+            startShift, endShift, activeShift, requestShift, requestLeave, updateShiftRequest, updateLeaveRequest, receiveStock
         }}>
             {children}
         </DataContext.Provider>

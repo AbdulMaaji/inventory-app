@@ -6,7 +6,6 @@ import DashboardPage from './pages/DashboardPage';
 import ItemsPage from './pages/ItemsPage';
 import ItemFormPage from './pages/ItemFormPage';
 import SettingsPage from './pages/SettingsPage';
-import POSPage from './pages/POSPage';
 import ShiftPage from './pages/ShiftPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
@@ -41,7 +40,6 @@ function App() {
           <Route path="items" element={<ItemsPage />} />
           <Route path="items/new" element={<ItemFormPage />} />
           <Route path="items/:id" element={<ItemFormPage />} />
-          <Route path="pos" element={<POSPage />} />
           <Route path="shift" element={<ShiftPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="activities" element={<ActivitiesPage />} />
