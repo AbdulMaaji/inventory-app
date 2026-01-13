@@ -14,18 +14,23 @@ A modern, real-time, offline-first inventory management system designed for mult
     -   Invite and manage employees.
     -   View aggregated analytics and audit logs.
 -   **Employees**:
-    -   Restricted access tailored to daily tasks (POS, Stocking).
+    -   Restricted access tailored to daily operations (Inventory, Shifts).
+    -   Request shifts and leaves through a dedicated portal.
     -   Real-time collaboration.
 
 ### ⚡ Real-Time Sync & Offline-First
--   **Instant Synchronization**: Employees work in real-time. Sales or stock changes made by one employee instantly reflect on others' devices.
--   **Works Offline**: The app works flawlessly without internet. Data is stored locally and syncs automatically when the connection is restored.
--   **Conflict Resolution**: robust handling of data conflicts when multiple users edit the same item offline.
+-   **Instant Synchronization**: Operations are tracked in real-time. Stock changes or shift updates reflect instantly across devices.
+-   **Works Offline**: The app works flawlessly without internet using IndexedDB. Data syncs automatically when the connection is restored.
 
-### 📊 Monitoring & Analytics
--   **Live Dashboard**: Owners can monitor employee activity and current sales in real-time.
--   **Performance Metrics**: Track individual employee productivity and shop sales performance.
--   **Audit Trails**: Detailed logs of every action (who accepted stock, who made a sale, when and where).
+### 📅 Advanced Shift & Schedule Management
+-   **Live Shift Monitoring**: Owners can see exactly who is currently in shift, their start times, and opening balances.
+-   **Leave Request System**: Integrated workflow for employees to request leaves, with an approval system for owners.
+-   **Shift Requests**: Employees can propose their working schedules for review and approval.
+-   **Attendance Overview**: Track who is on approved leave today directly from the management center.
+
+### 📋 Monitoring & Audit
+-   **Live Dashboard**: Owners can monitor employee activity and inventory value in real-time.
+-   **Audit Trails**: Detailed logs of every action (stock updates, shift transitions, login/logout events).
 
 ## 🛠 Tech Stack
 
