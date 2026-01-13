@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
-    LayoutDashboard, Package, FolderTree, MapPin,
-    ScanLine, Settings, X, ShoppingCart, Power, Users
+    LayoutDashboard, Package,
+    Settings, X, ShoppingCart, Power, Users
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/Button';
@@ -18,9 +18,6 @@ const NAV_ITEMS = [
     { label: 'Shift', icon: Power, href: '/shift', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Inventory', icon: Package, href: '/items', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Employees', icon: Users, href: '/employees', roles: ['owner'] },
-    { label: 'Categories', icon: FolderTree, href: '/categories', roles: ['owner', 'manager'] },
-    { label: 'Locations', icon: MapPin, href: '/locations', roles: ['owner', 'manager'] },
-    { label: 'Scan', icon: ScanLine, href: '/scan', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Settings', icon: Settings, href: '/settings', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
 ];
 

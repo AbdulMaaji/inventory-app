@@ -12,7 +12,7 @@ type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 
 export default function ItemFormPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { items, categories, locations, addItem, updateItem } = useData();
+    const { items, categories, addItem, updateItem } = useData();
     const isEdit = !!id;
 
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ItemFormData>({
@@ -110,17 +110,7 @@ export default function ItemFormPage() {
                         </select>
                         {errors.categoryId && <span className="text-xs text-red-500">Required</span>}
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Location</label>
-                        <select
-                            {...register('locationId', { required: true })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <option value="">Select Location</option>
-                            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
-                        {errors.locationId && <span className="text-xs text-red-500">Required</span>}
-                    </div>
+
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">

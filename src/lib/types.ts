@@ -40,7 +40,6 @@ export type Item = BaseEntity & {
     barcode?: string;
     description?: string;
     categoryId: string;
-    locationId: string;
     quantity: number;
     minQuantity: number;
     unit: string;
@@ -56,12 +55,7 @@ export type Category = BaseEntity & {
     description?: string;
 };
 
-export type Location = BaseEntity & {
-    name: string;
-    parentId?: string | null;
-    description?: string;
-    address?: string;
-};
+
 
 export type TransactionType = 'add' | 'remove' | 'adjust' | 'transfer' | 'sale' | 'stock_in';
 
@@ -69,8 +63,6 @@ export type Transaction = BaseEntity & {
     itemId: string;
     type: TransactionType;
     quantity: number;
-    fromLocationId?: string;
-    toLocationId?: string;
     reason?: string;
     notes?: string;
     userId: string;

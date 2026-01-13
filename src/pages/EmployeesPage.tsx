@@ -10,7 +10,7 @@ import {
 import type { UserRole } from '../lib/types';
 
 export default function EmployeesPage() {
-    const { createEmployee, user: currentUser } = useAuth();
+    const { createEmployee, user: currentUser, employees } = useAuth();
     const { sales, activities } = useData();
     const [showAdd, setShowAdd] = useState(false);
 
@@ -22,11 +22,7 @@ export default function EmployeesPage() {
     const [role, setRole] = useState<UserRole>('cashier');
     const [loading, setLoading] = useState(false);
 
-    // Mock/Fetch employees from IndexedDB directly since we don't have a "getAllUsers" in context yet
-    // For now, I'll derive them from activities or we should ideally have a user list in context.
-    // I'll add a simplified user list display by filtering unique users from activities.
-    const uniqueUsers = Array.from(new Set(activities.map(a => JSON.stringify(a.userSnapshot))))
-        .map(s => JSON.parse(s)) as { username: string; role: UserRole }[];
+
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,17 +103,18 @@ export default function EmployeesPage() {
                     <h2 className="text-2xl font-black px-2">Staff Directory</h2>
                     <div className="bg-white dark:bg-gray-900 rounded-[32px] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                         <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                            {uniqueUsers.map(u => (
-                                <div key={u.username} className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            {employees.map(u => (
+                                <div key={u.id} className="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <div className="flex items-center gap-4">
                                         <div className="h-12 w-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                                             <Users className="h-6 w-6 text-muted-foreground" />
                                         </div>
                                         <div>
-                                            <p className="font-bold">{u.username === currentUser?.username ? 'You (Owner)' : u.username}</p>
+                                            <p className="font-bold">{u.username === currentUser?.username ? 'You (Owner)' : u.fullName || u.username}</p>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">{u.role}</span>
                                                 <span className="text-[10px] font-black uppercase bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Online</span>
+                                                <span className="text-[10px] font-bold text-muted-foreground ml-2">Password: ••••••••</span>
                                             </div>
                                         </div>
                                     </div>
@@ -130,7 +127,7 @@ export default function EmployeesPage() {
                                     </div>
                                 </div>
                             ))}
-                            {uniqueUsers.length === 0 && <div className="p-10 text-center text-muted-foreground italic">No employees registered yet.</div>}
+                            {employees.length === 0 && <div className="p-10 text-center text-muted-foreground italic">No employees registered yet.</div>}
                         </div>
                     </div>
                 </div>
@@ -139,7 +136,7 @@ export default function EmployeesPage() {
                     <h2 className="text-2xl font-black px-2 text-primary">Performance Insights</h2>
                     <div className="bg-white dark:bg-gray-900 rounded-[32px] border border-gray-100 dark:border-gray-800 p-8 space-y-8 shadow-sm">
                         <div className="space-y-6">
-                            <Stat label="Total Team Count" value={uniqueUsers.length.toString()} icon={<Users />} />
+                            <Stat label="Total Team Count" value={employees.length.toString()} icon={<Users />} />
                             <Stat label="Total Monthly Payroll" value={currency(0)} icon={<DollarSign />} />
                             <Stat label="Efficiency Rating" value="98%" icon={<TrendingUp />} />
                         </div>

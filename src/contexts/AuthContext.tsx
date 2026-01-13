@@ -19,6 +19,8 @@ interface AuthContextType {
     logout: () => void;
     error: string | null;
     logActivity: (action: Activity['action'], details: string) => Promise<void>;
+    employees: UserRecord[];
+    refreshEmployees: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [dek, setDek] = useState<CryptoKey | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [employees, setEmployees] = useState<UserRecord[]>([]);
 
     useEffect(() => {
         // Hydrate from session or similar if needed. 
@@ -179,7 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Log successful login
             // We'll call logActivity after the next tick to ensure state is flushed
+            // We'll call logActivity after the next tick to ensure state is flushed
             setTimeout(() => logActivity('login', `User ${userRecord.username} logged in from ${navigator.userAgent}`), 0);
+
+            // Fetch employees if owner
+            if (userRecord.role === 'owner') {
+                const allUsers = await db.getAllFromIndex('users', 'by-shop', shopRecord.id);
+                setEmployees(allUsers);
+            }
 
         } catch (e: any) {
             setError(e.message);
@@ -230,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             await db.add('users', newUserRecord);
+            setEmployees(prev => [...prev, newUserRecord]);
             await logActivity('user_created', `Employee ${data.fullName} created as ${data.role}`);
 
         } catch (e: any) {
@@ -240,6 +251,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const refreshEmployees = async () => {
+        if (!user || user.role !== 'owner') return;
+        const db = await dbPromise;
+        const allUsers = await db.getAllFromIndex('users', 'by-shop', user.shopId);
+        setEmployees(allUsers);
+    };
+
     const logout = () => {
         if (user && shop) {
             logActivity('logout', `User ${user.username} logged out`);
@@ -247,11 +265,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setShop(null);
         setDek(null);
+        setEmployees([]);
     };
 
     return (
         <AuthContext.Provider value={{
-            user, shop, dek, isAuthenticated: !!user, isLoading, login, registerShop, createEmployee, logout, error, logActivity
+            user, shop, dek, isAuthenticated: !!user, isLoading, login, registerShop, createEmployee, logout, error, logActivity, employees, refreshEmployees
         }}>
             {children}
         </AuthContext.Provider>

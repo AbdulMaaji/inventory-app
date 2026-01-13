@@ -5,9 +5,6 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ItemsPage from './pages/ItemsPage';
 import ItemFormPage from './pages/ItemFormPage';
-import CategoriesPage from './pages/CategoriesPage';
-import LocationsPage from './pages/LocationsPage';
-import ScanPage from './pages/ScanPage';
 import SettingsPage from './pages/SettingsPage';
 import POSPage from './pages/POSPage';
 import ShiftPage from './pages/ShiftPage';
@@ -44,9 +41,6 @@ function App() {
           <Route path="items" element={<ItemsPage />} />
           <Route path="items/new" element={<ItemFormPage />} />
           <Route path="items/:id" element={<ItemFormPage />} />
-          <Route path="categories" element={<CategoriesPage />} />
-          <Route path="locations" element={<LocationsPage />} />
-          <Route path="scan" element={<ScanPage />} />
           <Route path="pos" element={<POSPage />} />
           <Route path="shift" element={<ShiftPage />} />
           <Route path="employees" element={<EmployeesPage />} />
