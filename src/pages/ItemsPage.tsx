@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Plus, Search, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ItemsPage() {
-    const { items, categories, deleteItem } = useData();
+    const { items, deleteItem } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+
+    const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
 
     const filteredItems = items.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.sku.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || item.categoryId === categoryFilter;
+        const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
 
@@ -47,7 +49,7 @@ export default function ItemsPage() {
                 >
                     <option value="all">All Categories</option>
                     {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c} value={c}>{c}</option>
                     ))}
                 </select>
             </div>
@@ -76,7 +78,7 @@ export default function ItemsPage() {
                                     <td className="p-4 align-middle font-medium">{item.name}</td>
                                     <td className="p-4 align-middle">{item.sku}</td>
                                     <td className="p-4 align-middle">
-                                        {categories.find(c => c.id === item.categoryId)?.name || '-'}
+                                        {item.category || '-'}
                                     </td>
                                     <td className="p-4 align-middle">
                                         <span className={item.quantity <= item.minQuantity ? "text-red-500 font-bold" : ""}>

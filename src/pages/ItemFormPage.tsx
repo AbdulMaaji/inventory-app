@@ -12,7 +12,7 @@ type ItemFormData = Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 
 export default function ItemFormPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { items, categories, addItem, updateItem } = useData();
+    const { items, addItem, updateItem } = useData();
     const isEdit = !!id;
 
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ItemFormData>({
@@ -101,16 +101,12 @@ export default function ItemFormPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Category</label>
-                        <select
-                            {...register('categoryId', { required: true })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <option value="">Select Category</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        {errors.categoryId && <span className="text-xs text-red-500">Required</span>}
+                        <Input
+                            {...register('category')}
+                            placeholder="e.g. Drinks, Electronics, etc."
+                        />
+                        {errors.category && <span className="text-xs text-red-500">Required</span>}
                     </div>
-
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
@@ -119,7 +115,7 @@ export default function ItemFormPage() {
                         <Input type="number" {...register('quantity', { valueAsNumber: true })} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Min Quantity</label>
+                        <label className="text-sm font-medium">Min Quantity (for alert)</label>
                         <Input type="number" {...register('minQuantity', { valueAsNumber: true })} />
                     </div>
                     <div className="space-y-2">
@@ -140,7 +136,7 @@ export default function ItemFormPage() {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Description</label>
+                    <label className="text-sm font-medium">Description (Optional)</label>
                     <textarea
                         {...register('description')}
                         className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import { useEffect, useState } from 'react';
 
 export default function SettingsPage() {
-    const { items, categories, transactions, addCategory } = useData();
+    const { items, transactions } = useData();
     const { user } = useAuth();
     const [isDark, setIsDark] = useState(false);
     useEffect(() => {
@@ -29,7 +29,6 @@ export default function SettingsPage() {
         const data = {
             shop: user?.shopId,
             items: items,
-            categories: categories,
             transactions: transactions
         };
 
@@ -50,7 +49,7 @@ export default function SettingsPage() {
             quantity: i.quantity,
             cost: i.costPrice,
             price: i.sellingPrice,
-            category: categories.find(c => c.id === i.categoryId)?.name
+            category: i.category
         })));
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -62,13 +61,10 @@ export default function SettingsPage() {
     };
 
     const generateSampleData = async () => {
-        if (!confirm("This will add sample data to your inventory. Continue?")) return;
+        if (!confirm("This will add sample items to your inventory. Continue?")) return;
 
-        // Add Categories
-        await addCategory({ name: 'Electronics', description: 'Gadgets and devices' });
-        await addCategory({ name: 'Office Supplies', description: 'Stationery' });
-
-        alert("Sample data generation requires manual reload to pick up new IDs for linking. Check categories!");
+        // Note: addItem could be called here with sample data if desired
+        alert("Sample data generation is currently limited to manual item entry.");
     };
 
     return (
@@ -111,7 +107,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-card shadow-sm">
                     <div>
                         <h3 className="font-medium">Demo Data</h3>
-                        <p className="text-sm text-muted-foreground">Add sample categories</p>
+                        <p className="text-sm text-muted-foreground">Add sample items</p>
                     </div>
                     <Button variant="outline" onClick={generateSampleData}>
                         Generate Data

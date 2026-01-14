@@ -51,11 +51,7 @@ interface InventoryDB extends DBSchema {
         value: EncryptedRecord;
         indexes: { 'by-shop': string };
     };
-    categories: {
-        key: string;
-        value: EncryptedRecord;
-        indexes: { 'by-shop': string };
-    };
+
 
     transactions: {
         key: string;
@@ -126,7 +122,7 @@ export async function initDB() {
 
             // Encrypted Stores
             const stores = [
-                'items', 'categories', 'transactions',
+                'items', 'transactions',
                 'alerts', 'shifts', 'sales', 'activities',
                 'shift_requests', 'leave_requests'
             ] as const;

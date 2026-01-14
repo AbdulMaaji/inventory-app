@@ -39,7 +39,7 @@ export type Item = BaseEntity & {
     sku: string;
     barcode?: string;
     description?: string;
-    categoryId: string;
+    category: string;
     quantity: number;
     minQuantity: number;
     unit: string;
@@ -49,11 +49,7 @@ export type Item = BaseEntity & {
     customFields: Record<string, any>;
 };
 
-export type Category = BaseEntity & {
-    name: string;
-    parentId?: string | null;
-    description?: string;
-};
+
 
 
 

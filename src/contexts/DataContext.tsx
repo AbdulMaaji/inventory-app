@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import type { Item, Category, Transaction, Alert, Shift, Sale, Activity, ShiftRequest, LeaveRequest } from '../lib/types';
+import type { Item, Transaction, Alert, Shift, Sale, Activity, ShiftRequest, LeaveRequest } from '../lib/types';
 import { dbPromise, type EncryptedRecord } from '../lib/db';
 import { encryptData, decryptData } from '../lib/crypto';
 import { useAuth } from './AuthContext';
@@ -7,7 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface DataContextType {
     items: Item[];
-    categories: Category[];
     transactions: Transaction[];
     alerts: Alert[];
     shifts: Shift[];
@@ -21,10 +20,6 @@ interface DataContextType {
     addItem: (item: Omit<Item, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => Promise<void>;
     updateItem: (id: string, updates: Partial<Item>) => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
-
-    addCategory: (category: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => Promise<void>;
-    updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
-    deleteCategory: (id: string) => Promise<void>;
 
     addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'shopId'>) => Promise<void>;
 
@@ -44,7 +39,6 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
     const { dek, isAuthenticated, user, shop, logActivity } = useAuth();
     const [items, setItems] = useState<Item[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [shifts, setShifts] = useState<Shift[]>([]);
@@ -62,7 +56,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             const db = await dbPromise;
 
-            const decryptAll = async <T,>(storeName: 'items' | 'categories' | 'transactions' | 'alerts' | 'shifts' | 'sales' | 'activities' | 'shift_requests' | 'leave_requests') => {
+            const decryptAll = async <T,>(storeName: 'items' | 'transactions' | 'alerts' | 'shifts' | 'sales' | 'activities' | 'shift_requests' | 'leave_requests') => {
                 const records = await db.getAllFromIndex(storeName, 'by-shop', shop.id);
                 const decrypted = await Promise.all(
                     records.map(async (r: EncryptedRecord) => {
@@ -77,12 +71,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
             };
 
             const [
-                loadedItems, loadedCats, loadedTrans,
+                loadedItems, loadedTrans,
                 loadedAlerts, loadedShifts, loadedSales, loadedActs,
                 loadedShiftReqs, loadedLeaveReqs
             ] = await Promise.all([
                 decryptAll<Item>('items'),
-                decryptAll<Category>('categories'),
                 decryptAll<Transaction>('transactions'),
                 decryptAll<Alert>('alerts'),
                 decryptAll<Shift>('shifts'),
@@ -93,7 +86,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ]);
 
             setItems(loadedItems);
-            setCategories(loadedCats);
             setTransactions(loadedTrans.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             setAlerts(loadedAlerts);
             setShifts(loadedShifts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
@@ -112,7 +104,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!isAuthenticated) {
             setItems([]);
-            setCategories([]);
             setTransactions([]);
             setAlerts([]);
             setShifts([]);
@@ -163,34 +154,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const deleteItem = async (id: string) => {
         await updateItem(id, { deletedAt: new Date().toISOString() });
-    };
-
-    const addCategory = async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'shopId'>) => {
-        if (!shop) return;
-        const newCat: Category = {
-            ...data,
-            id: uuidv4(),
-            shopId: shop.id,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        setCategories(prev => [...prev, newCat]);
-        await saveRecord('categories', newCat);
-    };
-
-    const updateCategory = async (id: string, updates: Partial<Category>) => {
-        setCategories(prev => prev.map(c => {
-            if (c.id === id) {
-                const updated = { ...c, ...updates, updatedAt: new Date().toISOString() };
-                saveRecord('categories', updated);
-                return updated;
-            }
-            return c;
-        }));
-    };
-
-    const deleteCategory = async (id: string) => {
-        await updateCategory(id, { deletedAt: new Date().toISOString() });
     };
 
 
@@ -347,9 +310,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     return (
         <DataContext.Provider value={{
-            items, categories, transactions, alerts, shifts, sales, activities, shiftRequests, leaveRequests, isLoading, refreshData: loadData,
+            items, transactions, alerts, shifts, sales, activities, shiftRequests, leaveRequests, isLoading, refreshData: loadData,
             addItem, updateItem, deleteItem,
-            addCategory, updateCategory, deleteCategory,
             addTransaction,
             startShift, endShift, activeShift, requestShift, requestLeave, updateShiftRequest, updateLeaveRequest, receiveStock
         }}>
