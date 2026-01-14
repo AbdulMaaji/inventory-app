@@ -14,7 +14,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
-    { label: 'Shift', icon: Power, href: '/shift', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
+    { label: 'Shift', icon: Power, href: '/shift', roles: ['manager', 'cashier', 'stock_keeper'] },
     { label: 'Inventory', icon: Package, href: '/items', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },
     { label: 'Employees', icon: Users, href: '/employees', roles: ['owner'] },
     { label: 'Settings', icon: Settings, href: '/settings', roles: ['owner', 'manager', 'cashier', 'stock_keeper'] },

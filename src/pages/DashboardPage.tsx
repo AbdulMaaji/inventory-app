@@ -9,8 +9,8 @@ import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 
 export default function DashboardPage() {
-    const { items, sales, activeShift, activities, alerts } = useData();
-    const { user, shop } = useAuth();
+    const { items, sales, activeShift, shifts, activities, alerts } = useData();
+    const { user, shop, employees } = useAuth();
     const navigate = useNavigate();
     const isOwner = user?.role === 'owner';
 
@@ -33,26 +33,26 @@ export default function DashboardPage() {
                         title="Today's Inventory Val"
                         value={currency(items.reduce((sum, i) => sum + (i.sellingPrice * i.quantity), 0))}
                         icon={<TrendingUp className="text-green-600" />}
-                        trend="+12% from yesterday"
+                        trend={`${items.length} unique items logged`}
                     />
                     <DashboardCard
                         title="Low Stock Items"
                         value={items.filter(i => i.quantity <= i.minQuantity).length.toString()}
                         icon={<Package className="text-orange-600" />}
-                        trend="3 critical items"
+                        trend={`${items.filter(i => i.quantity === 0).length} completely out of stock`}
                         critical={items.some(i => i.quantity <= i.minQuantity)}
                     />
                     <DashboardCard
-                        title="Staff Active"
-                        value={activeShift ? "1" : "0"}
+                        title="Total Staff"
+                        value={employees.length.toString()}
                         icon={<Users className="text-blue-600" />}
-                        trend="Across all shifts"
+                        trend={`${shifts.filter(s => s.status === 'open').length} staff active now`}
                     />
                     <DashboardCard
                         title="Alert Severity"
                         value={alerts.length.toString()}
                         icon={<AlertTriangle className="text-red-600" />}
-                        trend="Unresolved issues"
+                        trend={`${alerts.filter(a => a.level === 'high').length} high priority alerts`}
                         critical={alerts.some(a => a.level === 'high')}
                     />
                 </div>
