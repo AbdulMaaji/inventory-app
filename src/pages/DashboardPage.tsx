@@ -64,15 +64,15 @@ export default function DashboardPage() {
                             <Button variant="ghost" size="sm" onClick={() => navigate('/activities')} className="text-xs font-bold text-primary">View Full Log</Button>
                         </div>
                         <div className="space-y-4">
-                            {activities.slice(0, 5).map(act => (
-                                <div key={act.id} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
+                            {activities.slice(0, 5).map((act, index) => (
+                                <div key={act.id || `activity-${index}`} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
                                     <div className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
                                         <ActivityIcon className="h-4 w-4 text-primary" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold truncate text-gray-800 dark:text-gray-200">{act.details}</p>
                                         <p className="text-[10px] font-black uppercase text-muted-foreground opacity-70 tracking-tighter">
-                                            {act.userSnapshot.username} • {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {act.userSnapshot?.username || 'Unknown User'} • {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
                                     <ChevronRight className="h-4 w-4 text-gray-300" />

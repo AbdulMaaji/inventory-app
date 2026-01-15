@@ -13,7 +13,7 @@ export default function ItemsPage() {
     const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
 
     const filteredItems = items.filter(item => {
-        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
         return matchesSearch && matchesCategory;
