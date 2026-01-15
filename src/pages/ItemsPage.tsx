@@ -14,7 +14,7 @@ export default function ItemsPage() {
 
     const filteredItems = items.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.sku.toLowerCase().includes(searchTerm.toLowerCase());
+            (item.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
@@ -76,7 +76,7 @@ export default function ItemsPage() {
                             {filteredItems.map((item) => (
                                 <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
                                     <td className="p-4 align-middle font-medium">{item.name}</td>
-                                    <td className="p-4 align-middle">{item.sku}</td>
+                                    <td className="p-4 align-middle">{item.sku || '-'}</td>
                                     <td className="p-4 align-middle">
                                         {item.category || '-'}
                                     </td>
